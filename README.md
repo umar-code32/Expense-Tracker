@@ -12,6 +12,7 @@ A multi-user expense tracking web portal built with Next.js.
 - Dashboard with this month's total, spend-by-category chart, 6-month trend, and recent transactions
 - Per-category monthly budgets with progress bars
 - CSV export of all expenses
+- Per-user currency preference (Settings page) — applies to all amounts across the dashboard, expenses, budgets, and CSV export
 
 ## Tech stack
 

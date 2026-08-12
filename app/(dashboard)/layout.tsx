@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 import SignOutButton from "@/components/SignOutButton";
+import { CurrencyProvider } from "@/components/CurrencyProvider";
 
 export default async function DashboardLayout({
   children,
@@ -8,6 +11,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  const user = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { currency: true },
+      })
+    : null;
 
   return (
     <div className="min-h-screen">
@@ -24,6 +33,9 @@ export default async function DashboardLayout({
             <Link href="/budgets" className="text-sm hover:underline">
               Budgets
             </Link>
+            <Link href="/settings" className="text-sm hover:underline">
+              Settings
+            </Link>
           </nav>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-neutral-500 sm:inline">
@@ -33,7 +45,11 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6">
+        <CurrencyProvider initialCurrency={user?.currency ?? DEFAULT_CURRENCY}>
+          {children}
+        </CurrencyProvider>
+      </main>
     </div>
   );
 }

@@ -16,6 +16,7 @@ model User {
   passwordHash  String
   name          String
   emailVerified DateTime?
+  currency      String    @default("USD")
   createdAt     DateTime  @default(now())
 
   categories Category[]

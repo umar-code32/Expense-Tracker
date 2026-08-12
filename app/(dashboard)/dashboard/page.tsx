@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Expense } from "@/lib/types";
 import CategoryBadge from "@/components/CategoryBadge";
 import { CategoryPieChart, MonthlyTrendChart } from "@/components/DashboardCharts";
+import { useCurrency } from "@/components/CurrencyProvider";
 
 type DashboardData = {
   monthTotal: number;
@@ -13,9 +14,8 @@ type DashboardData = {
   monthlyTrend: { month: string; total: number }[];
 };
 
-const currency = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" });
-
 export default function DashboardPage() {
+  const { format } = useCurrency();
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function DashboardPage() {
 
       <div className="rounded-lg border border-neutral-200 p-6 dark:border-neutral-800">
         <p className="text-sm text-neutral-500">This month&apos;s spending</p>
-        <p className="mt-1 text-3xl font-semibold">{currency.format(data.monthTotal)}</p>
+        <p className="mt-1 text-3xl font-semibold">{format(data.monthTotal)}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                   <CategoryBadge name={e.category.name} color={e.category.color} />
                   {e.note && <span className="text-neutral-500">{e.note}</span>}
                 </div>
-                <span className="font-medium">{currency.format(e.amount)}</span>
+                <span className="font-medium">{format(e.amount)}</span>
               </li>
             ))}
           </ul>

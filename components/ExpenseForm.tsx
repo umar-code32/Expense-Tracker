@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Category, Expense } from "@/lib/types";
 import ReceiptUpload from "@/components/ReceiptUpload";
+import { useCurrency } from "@/components/CurrencyProvider";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -21,6 +22,7 @@ export default function ExpenseForm({
   onCancel: () => void;
   onCategoryCreated: (category: Category) => void;
 }) {
+  const { currency } = useCurrency();
   const [amount, setAmount] = useState(expense ? String(expense.amount) : "");
   const [date, setDate] = useState(expense ? expense.date.slice(0, 10) : todayIso());
   const [categoryId, setCategoryId] = useState(expense?.categoryId ?? categories[0]?.id ?? "");
@@ -92,7 +94,7 @@ export default function ExpenseForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Amount</label>
+          <label className="mb-1 block text-sm font-medium">Amount ({currency})</label>
           <input
             type="number"
             step="0.01"

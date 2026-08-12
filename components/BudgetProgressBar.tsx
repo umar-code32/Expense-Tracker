@@ -1,4 +1,6 @@
-const currency = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" });
+"use client";
+
+import { useCurrency } from "@/components/CurrencyProvider";
 
 export default function BudgetProgressBar({
   spent,
@@ -9,6 +11,7 @@ export default function BudgetProgressBar({
   limit: number;
   color: string;
 }) {
+  const { format } = useCurrency();
   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
   const over = spent > limit;
 
@@ -16,7 +19,7 @@ export default function BudgetProgressBar({
     <div>
       <div className="mb-1 flex items-center justify-between text-sm">
         <span className={over ? "font-medium text-red-600" : ""}>
-          {currency.format(spent)} / {currency.format(limit)}
+          {format(spent)} / {format(limit)}
         </span>
         {over && <span className="text-xs font-medium text-red-600">Over budget</span>}
       </div>

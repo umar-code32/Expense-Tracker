@@ -6,7 +6,7 @@ import { authConfig } from "@/lib/auth.config";
 // cookie can be verified in the Edge runtime without touching the database.
 const { auth } = NextAuth(authConfig);
 
-const PROTECTED_PREFIXES = ["/dashboard", "/expenses", "/budgets"];
+const PROTECTED_PREFIXES = ["/dashboard", "/expenses", "/budgets", "/settings"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export default auth((req) => {
@@ -30,5 +30,12 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/expenses/:path*", "/budgets/:path*", "/login", "/signup"],
+  matcher: [
+    "/dashboard/:path*",
+    "/expenses/:path*",
+    "/budgets/:path*",
+    "/settings/:path*",
+    "/login",
+    "/signup",
+  ],
 };

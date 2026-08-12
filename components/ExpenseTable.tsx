@@ -2,8 +2,7 @@
 
 import type { Expense } from "@/lib/types";
 import CategoryBadge from "@/components/CategoryBadge";
-
-const currency = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" });
+import { useCurrency } from "@/components/CurrencyProvider";
 
 export default function ExpenseTable({
   expenses,
@@ -14,6 +13,8 @@ export default function ExpenseTable({
   onEdit: (expense: Expense) => void;
   onDelete: (expense: Expense) => void;
 }) {
+  const { format } = useCurrency();
+
   if (expenses.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-500 dark:border-neutral-700">
@@ -53,7 +54,7 @@ export default function ExpenseTable({
                 )}
               </td>
               <td className="whitespace-nowrap px-4 py-2 text-right font-medium">
-                {currency.format(e.amount)}
+                {format(e.amount)}
               </td>
               <td className="whitespace-nowrap px-4 py-2 text-right">
                 <button onClick={() => onEdit(e)} className="mr-3 text-xs underline text-neutral-600 dark:text-neutral-300">
