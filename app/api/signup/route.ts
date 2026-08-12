@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
+import { generateOtp, hashOtp, OTP_TTL_MS } from "@/lib/otp";
+import { sendOtpEmail } from "@/lib/mailer";
 
 export async function POST(request: Request) {
   const ip = clientIp(request);
@@ -32,29 +34,57 @@ export async function POST(request: Request) {
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+  if (existing && existing.emailVerified) {
     return NextResponse.json(
       { error: "An account with that email already exists." },
       { status: 409 }
     );
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  // An existing-but-unverified row means a prior signup never completed
+  // verification (closed tab, lost the code, etc.) — restart it in place
+  // rather than permanently blocking that email behind a dead 409.
+  const userId = await (existing
+    ? prisma.user
+        .update({
+          where: { id: existing.id },
+          data: { name, passwordHash: await bcrypt.hash(password, 12) },
+        })
+        .then((u) => u.id)
+    : prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: { email, name, passwordHash: await bcrypt.hash(password, 12) },
+        });
+        await tx.category.createMany({
+          data: DEFAULT_CATEGORIES.map((c) => ({
+            userId: user.id,
+            name: c.name,
+            color: c.color,
+            isDefault: true,
+          })),
+        });
+        return user.id;
+      }));
 
-  await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: { email, name, passwordHash },
-    });
-
-    await tx.category.createMany({
-      data: DEFAULT_CATEGORIES.map((c) => ({
-        userId: user.id,
-        name: c.name,
-        color: c.color,
-        isDefault: true,
-      })),
-    });
+  const otp = generateOtp();
+  await prisma.emailOtp.create({
+    data: { userId, codeHash: hashOtp(otp), expiresAt: new Date(Date.now() + OTP_TTL_MS) },
   });
 
-  return NextResponse.json({ ok: true }, { status: 201 });
+  try {
+    await sendOtpEmail(email, otp);
+  } catch (err) {
+    if (!existing) {
+      // Fresh signup: don't leave an unreachable account behind if we
+      // couldn't even deliver the first code.
+      await prisma.user.delete({ where: { id: userId } });
+    }
+    console.error("Failed to send verification email:", err);
+    return NextResponse.json(
+      { error: "Couldn't send the verification email. Please try again." },
+      { status: 502 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, email }, { status: 201 });
 }

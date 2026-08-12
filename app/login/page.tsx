@@ -9,15 +9,18 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const justVerified = searchParams.get("verified") === "1";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsVerification(false);
     setLoading(true);
 
     const res = await signIn("credentials", {
@@ -29,7 +32,12 @@ function LoginForm() {
     setLoading(false);
 
     if (res?.error) {
-      setError("Invalid email or password.");
+      if (res.code === "unverified_email") {
+        setNeedsVerification(true);
+        setError("Please verify your email before signing in.");
+      } else {
+        setError("Invalid email or password.");
+      }
       return;
     }
 
@@ -44,6 +52,12 @@ function LoginForm() {
         <p className="mb-6 text-sm text-neutral-500">
           Sign in to your expense tracker.
         </p>
+
+        {justVerified && (
+          <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-400">
+            Email verified — you can sign in now.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -79,7 +93,22 @@ function LoginForm() {
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-600">
+              {error}
+              {needsVerification && (
+                <>
+                  {" "}
+                  <Link
+                    href={`/verify?email=${encodeURIComponent(email)}`}
+                    className="font-medium underline"
+                  >
+                    Verify now
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
 
           <button
             type="submit"

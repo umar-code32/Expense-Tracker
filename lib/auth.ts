@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +9,13 @@ import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 // still pays the full bcrypt cost — otherwise response timing leaks which
 // emails are registered.
 const DUMMY_HASH = bcrypt.hashSync("timing-attack-mitigation", 12);
+
+// Distinct error code so the login page can offer a "resend code" link.
+// Safe to reveal here (unlike email-existence) since reaching this branch
+// already required the correct email *and* password.
+export class UnverifiedEmailError extends CredentialsSignin {
+  code = "unverified_email";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -36,6 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({ where: { email } });
         const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
         if (!user || !valid) return null;
+        if (!user.emailVerified) throw new UnverifiedEmailError();
 
         return { id: user.id, email: user.email, name: user.name };
       },
